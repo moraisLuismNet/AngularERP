@@ -181,5 +181,5 @@ export const environment = {
 ## Administrator Credentials
 - **Email**: admin@erp.com
 - **Password**: admin123
-- 
+
 [DeepWiki moraisLuismNet/AngularERP](https://deepwiki.com/moraisLuismNet/AngularERP)
