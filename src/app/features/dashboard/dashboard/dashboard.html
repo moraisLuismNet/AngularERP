@@ -1,0 +1,76 @@
+<div class="dashboard-container">
+  <h1>Dashboard ERP</h1>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>Total Products</h3>
+      <p class="stat-number">{{ totalProducts }}</p>
+      <a routerLink="/inventory/products" class="stat-link">View Inventory</a>
+    </div>
+
+    <div class="stat-card">
+      <h3>Active Users</h3>
+      <p class="stat-number">{{ activeUsers }}</p>
+      <a routerLink="/customers" class="stat-link">Manage Users</a>
+    </div>
+
+    <div class="stat-card warning">
+      <h3>Low Stock</h3>
+      <p class="stat-number">{{ lowStockProducts.length }}</p>
+      <a routerLink="/reports/stock" class="stat-link">View Reports</a>
+    </div>
+  </div>
+
+  <!-- Quick Actions Section -->
+  <div class="quick-actions">
+    <h2>Quick Access</h2>
+    <div class="actions-grid">
+      <a routerLink="/inventory/products" class="action-card">
+        <div class="action-icon">📦</div>
+        <h3>Manage Inventory</h3>
+        <p>Products</p>
+      </a>
+      <a routerLink="/reports/sales" class="action-card">
+        <div class="action-icon">📊</div>
+        <h3>View Reports</h3>
+        <p>Sales analysis</p>
+      </a>
+      <a routerLink="/customers" class="action-card">
+        <div class="action-icon">👥</div>
+        <h3>Customers</h3>
+        <p>Manage customer base</p>
+      </a>
+      <a routerLink="/suppliers" class="action-card">
+        <div class="action-icon">🏢</div>
+        <h3>Suppliers</h3>
+        <p>Manage suppliers</p>
+      </a>
+    </div>
+  </div>
+
+  @if (lowStockProducts.length > 0 && !hasError) {
+  <div class="alerts-section">
+    <h2>Low Stock Alerts</h2>
+    <div class="alert-list">
+      @for (product of lowStockProducts; track product.id) {
+      <div class="alert-item">
+        <span class="product-name">{{ product.name }}</span>
+        <span class="stock-info">Stock: {{ product.stock }}</span>
+      </div>
+      }
+    </div>
+  </div>
+  } @if (loading) {
+  <div class="loading">
+    <p>Loading dashboard data...</p>
+  </div>
+  } @if (hasError) {
+  <div class="error-section">
+    <div class="error-card">
+      <h3>⚠️ Connection Error</h3>
+      <p>{{ errorMessage }}</p>
+      <button class="btn btn-primary" (click)="retryLoad()">Retry</button>
+    </div>
+  </div>
+  }
+</div>

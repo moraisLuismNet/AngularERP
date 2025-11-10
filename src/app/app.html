@@ -1,0 +1,19 @@
+<div class="app-container">
+  <!-- Complete layout for authenticated users -->
+  <div *ngIf="showLayout">
+    <app-header></app-header>
+
+    <div class="main-content">
+      <app-sidebar></app-sidebar>
+
+      <div class="content-area">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+
+  <!-- Router-outlet only for login -->
+  <div *ngIf="!showLayout" class="auth-container">
+    <router-outlet></router-outlet>
+  </div>
+</div>

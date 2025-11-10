@@ -1,0 +1,396 @@
+<div class="products-container">
+  <div class="header">
+    <h1>Product Management</h1>
+    <button class="btn btn-primary" (click)="createNewProduct()">
+      New Product
+    </button>
+  </div>
+
+  @if (!loading && !hasError && products.length > 0) {
+  <div class="products-table">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (product of products; track product.id) {
+        <tr>
+          <td class="image-cell">
+            @if (getProductImage(product)) {
+            <img
+              [src]="getProductImage(product)"
+              [alt]="product.name"
+              class="product-thumbnail"
+            />
+            } @else {
+            <div class="no-image-small">
+              <span>📦</span>
+            </div>
+            }
+          </td>
+          <td class="name-cell">
+            <strong>{{ product.name }}</strong>
+            <div class="product-description">{{ product.description }}</div>
+          </td>
+          <td class="category-cell">
+            <span class="category-badge">{{ getCategoryName(product) }}</span>
+          </td>
+          <td class="price-cell">
+            <span class="price">{{
+              product.price | currency : "EUR" : "symbol" : "1.2-2" : "es"
+            }}</span>
+          </td>
+          <td class="stock-cell">
+            <span class="stock-count">{{ product.stock }}</span>
+          </td>
+          <td class="actions-cell">
+            <button
+              class="btn btn-sm btn-secondary"
+              (click)="editProductModal(product)"
+            >
+              Edit
+            </button>
+            <button
+              class="btn btn-sm btn-danger"
+              (click)="confirmDeleteProduct(product)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  } @if (loading) {
+  <div class="loading">
+    <p>Loading products...</p>
+  </div>
+  } @if (hasError) {
+  <div class="error-section">
+    <div class="error-card">
+      <h3>⚠️ Connection Error</h3>
+      <p>{{ errorMessage }}</p>
+      <button class="btn btn-primary" (click)="retryLoad()">Retry</button>
+    </div>
+  </div>
+  } @if (!loading && !hasError && products.length === 0) {
+  <div class="empty-state">
+    <p>No products registered</p>
+    <button class="btn btn-primary" (click)="createNewProduct()">
+      Add First Product
+    </button>
+  </div>
+  }
+</div>
+
+<!-- Create Product Modal -->
+@if (showCreateModal) {
+<div class="modal-overlay" (click)="closeCreateModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Create New Product</h2>
+      <button class="modal-close" (click)="closeCreateModal()">&times;</button>
+    </div>
+
+    <form (ngSubmit)="onSubmitCreate()" #createForm="ngForm">
+      <div class="modal-body">
+        @if (createError) {
+        <div class="error-message">
+          {{ createError }}
+        </div>
+        }
+
+        <div class="form-group">
+          <label for="productName">Product Name *</label>
+          <input
+            type="text"
+            id="productName"
+            name="productName"
+            [(ngModel)]="newProduct.name"
+            required
+            class="form-control"
+            placeholder="Enter product name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="productDescription">Description *</label>
+          <textarea
+            id="productDescription"
+            name="productDescription"
+            [(ngModel)]="newProduct.description"
+            required
+            class="form-control"
+            rows="3"
+            placeholder="Enter product description"
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productPrice">Price (€) *</label>
+            <input
+              type="number"
+              id="productPrice"
+              name="productPrice"
+              [(ngModel)]="newProduct.price"
+              required
+              min="0"
+              step="0.01"
+              class="form-control"
+              placeholder="0.00"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="productStock">Initial Stock *</label>
+            <input
+              type="number"
+              id="productStock"
+              name="productStock"
+              [(ngModel)]="newProduct.stock"
+              required
+              min="0"
+              class="form-control"
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="productCategory">Category *</label>
+          <select
+            id="productCategory"
+            name="productCategory"
+            [(ngModel)]="newProduct.categoryId"
+            required
+            class="form-control"
+          >
+            <option value="0">Select a category</option>
+            @for (category of categories; track category.id) {
+            <option [value]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="productImage">Image URL</label>
+          <input
+            type="url"
+            id="productImage"
+            name="productImage"
+            [(ngModel)]="newProduct.urlImage"
+            class="form-control"
+            placeholder="https://example.com/image.jpg"
+          />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closeCreateModal()"
+          [disabled]="creatingProduct"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="creatingProduct || !createForm.form.valid"
+        >
+          @if (creatingProduct) { Creating... } @else { Create Product }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+
+<!-- Edit Product Modal -->
+@if (showEditModal) {
+<div class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Product</h2>
+      <button class="modal-close" (click)="closeEditModal()">&times;</button>
+    </div>
+
+    <form (ngSubmit)="onSubmitEdit()" #editForm="ngForm">
+      <div class="modal-body">
+        @if (editError) {
+        <div class="error-message">
+          {{ editError }}
+        </div>
+        }
+
+        <div class="form-group">
+          <label for="editProductName">Product Name *</label>
+          <input
+            type="text"
+            id="editProductName"
+            name="editProductName"
+            [(ngModel)]="editProduct.name"
+            required
+            class="form-control"
+            placeholder="Enter product name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="editProductDescription">Description *</label>
+          <textarea
+            id="editProductDescription"
+            name="editProductDescription"
+            [(ngModel)]="editProduct.description"
+            required
+            class="form-control"
+            rows="3"
+            placeholder="Enter product description"
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editProductPrice">Price (€) *</label>
+            <input
+              type="number"
+              id="editProductPrice"
+              name="editProductPrice"
+              [(ngModel)]="editProduct.price"
+              required
+              min="0"
+              step="0.01"
+              class="form-control"
+              placeholder="0.00"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editProductStock">Stock *</label>
+            <input
+              type="number"
+              id="editProductStock"
+              name="editProductStock"
+              [(ngModel)]="editProduct.stock"
+              required
+              min="0"
+              class="form-control"
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editProductCategory">Category *</label>
+          <select
+            id="editProductCategory"
+            name="editProductCategory"
+            [(ngModel)]="editProduct.categoryId"
+            required
+            class="form-control"
+          >
+            <option value="0">Select a category</option>
+            @for (category of categories; track category.id) {
+            <option [value]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editProductImage">Image URL</label>
+          <input
+            type="url"
+            id="editProductImage"
+            name="editProductImage"
+            [(ngModel)]="editProduct.urlImage"
+            class="form-control"
+            placeholder="https://example.com/image.jpg"
+          />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closeEditModal()"
+          [disabled]="editingProduct"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="editingProduct || !editForm.form.valid"
+        >
+          @if (editingProduct) { Updating... } @else { Update Product }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal && productToDelete) {
+<div class="modal-overlay" (click)="closeDeleteModal()">
+  <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Confirm Delete</h2>
+      <button class="modal-close" (click)="closeDeleteModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      @if (deleteError) {
+      <div class="error-message">
+        {{ deleteError }}
+      </div>
+      }
+
+      <div class="delete-confirmation">
+        <div class="warning-icon">⚠️</div>
+        <h3>Are you sure you want to delete this product?</h3>
+        <div class="product-info">
+          <strong>{{ productToDelete.name }}</strong>
+          <p>{{ productToDelete.description }}</p>
+          <span class="price">{{
+            productToDelete.price | currency : "EUR" : "symbol" : "1.2-2" : "es"
+          }}</span>
+        </div>
+        <p class="warning-text">
+          This action cannot be undone. The product will be permanently removed
+          from the system.
+        </p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="closeDeleteModal()"
+        [disabled]="deletingProduct"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        (click)="onConfirmDelete()"
+        [disabled]="deletingProduct"
+      >
+        @if (deletingProduct) { Deleting... } @else { Delete Product }
+      </button>
+    </div>
+  </div>
+</div>
+}

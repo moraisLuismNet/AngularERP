@@ -1,0 +1,476 @@
+<div class="categories-container">
+  <div class="header">
+    <h1>Category Management</h1>
+    <div>
+      <button class="btn btn-primary" (click)="createNewCategory()">
+        New Category
+      </button>
+    </div>
+  </div>
+
+  @if (!loading && !hasError && categories.length > 0) {
+  <div class="categories-table">
+    <!-- Desktop Table View -->
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Products</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (category of categories; track category.id) {
+        <tr>
+          <td class="image-cell">
+            @if (category.urlImage && isValidImageUrl(category.urlImage)) {
+            <img
+              [src]="getImageUrl(category.urlImage)"
+              [alt]="category.name"
+              class="category-thumbnail"
+              (error)="onImageError(category)"
+              (load)="onImageLoad(category)"
+            />
+            } @else {
+            <div class="no-image-small">
+              <span>📂</span>
+            </div>
+            }
+          </td>
+          <td class="name-cell">
+            <strong>{{ category.name }}</strong>
+          </td>
+          <td class="description-cell">
+            <span class="description-text">{{ category.description }}</span>
+          </td>
+          <td class="count-cell">
+            <span class="product-count">{{ category.productCount }}</span>
+          </td>
+          <td class="actions-cell">
+            <button
+              class="btn btn-sm btn-secondary"
+              (click)="editCategoryModal(category)"
+            >
+              Edit
+            </button>
+            <button
+              class="btn btn-sm btn-info"
+              [disabled]="!canViewProducts(category)"
+              [title]="
+                canViewProducts(category)
+                  ? 'View products in this category'
+                  : 'No products in this category'
+              "
+              (click)="viewCategoryProducts(category)"
+            >
+              View Products
+            </button>
+            <button
+              class="btn btn-sm btn-danger"
+              [disabled]="!canDeleteCategory(category)"
+              [title]="
+                canDeleteCategory(category)
+                  ? 'Delete category'
+                  : 'Cannot delete category with products'
+              "
+              (click)="confirmDeleteCategory(category)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Mobile Card View -->
+    @for (category of categories; track category.id) {
+    <div class="category-card">
+      <div class="category-header">
+        @if (category.urlImage && isValidImageUrl(category.urlImage)) {
+        <img
+          [src]="getImageUrl(category.urlImage)"
+          [alt]="category.name"
+          class="category-thumbnail"
+          (error)="onImageError(category)"
+          (load)="onImageLoad(category)"
+        />
+        } @else {
+        <div class="no-image-small">
+          <span>📂</span>
+        </div>
+        }
+        <div class="category-title">
+          <strong>{{ category.name }}</strong>
+        </div>
+      </div>
+
+      <div class="category-meta">
+        <span class="product-count">{{ category.productCount }} products</span>
+      </div>
+
+      @if (category.description) {
+      <div class="category-description-mobile">
+        {{ category.description }}
+      </div>
+      }
+
+      <div class="category-actions">
+        <button class="btn btn-secondary" (click)="editCategoryModal(category)">
+          Edit
+        </button>
+        <button
+          class="btn btn-info"
+          [disabled]="!canViewProducts(category)"
+          (click)="viewCategoryProducts(category)"
+        >
+          View Products
+        </button>
+        <button
+          class="btn btn-danger"
+          [disabled]="!canDeleteCategory(category)"
+          (click)="confirmDeleteCategory(category)"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+    }
+  </div>
+  } @if (loading) {
+  <div class="loading">
+    <p>Loading categories...</p>
+  </div>
+  } @if (hasError) {
+  <div class="error-section">
+    <div class="error-card">
+      <h3>⚠️ Connection Error</h3>
+      <p>{{ errorMessage }}</p>
+      <button class="btn btn-primary" (click)="retryLoad()">Retry</button>
+    </div>
+  </div>
+  } @if (!loading && !hasError && categories.length === 0) {
+  <div class="empty-state">
+    <p>No categories registered</p>
+    <button class="btn btn-primary" (click)="createNewCategory()">
+      Add First Category
+    </button>
+  </div>
+  }
+</div>
+
+<!-- Create Category Modal -->
+@if (showCreateModal) {
+<div class="modal-overlay" (click)="closeCreateModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Create New Category</h2>
+      <button class="modal-close" (click)="closeCreateModal()">&times;</button>
+    </div>
+
+    <form (ngSubmit)="onSubmitCreate()" #createForm="ngForm">
+      <div class="modal-body">
+        @if (createError) {
+        <div class="error-message">
+          {{ createError }}
+        </div>
+        }
+
+        <div class="form-group">
+          <label for="categoryName">Category Name *</label>
+          <input
+            type="text"
+            id="categoryName"
+            name="categoryName"
+            [(ngModel)]="newCategory.name"
+            required
+            class="form-control"
+            placeholder="Enter category name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="categoryDescription">Description *</label>
+          <textarea
+            id="categoryDescription"
+            name="categoryDescription"
+            [(ngModel)]="newCategory.description"
+            required
+            class="form-control"
+            rows="3"
+            placeholder="Enter category description"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="categoryImage">Image URL</label>
+          <input
+            type="url"
+            id="categoryImage"
+            name="categoryImage"
+            [(ngModel)]="newCategory.urlImage"
+            class="form-control"
+            placeholder="https://example.com/image.jpg"
+          />
+          <small class="form-text"
+            >Optional: Add an image URL for the category</small
+          >
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closeCreateModal()"
+          [disabled]="creatingCategory"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="creatingCategory || !createForm.form.valid"
+        >
+          @if (creatingCategory) { Creating... } @else { Create Category }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+<!-- Edit Category Modal -->
+@if (showEditModal) {
+<div class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Category</h2>
+      <button class="modal-close" (click)="closeEditModal()">&times;</button>
+    </div>
+
+    <form (ngSubmit)="onSubmitEdit()" #editForm="ngForm">
+      <div class="modal-body">
+        @if (editError) {
+        <div class="error-message">
+          {{ editError }}
+        </div>
+        }
+
+        <div class="form-group">
+          <label for="editCategoryName">Category Name *</label>
+          <input
+            type="text"
+            id="editCategoryName"
+            name="editCategoryName"
+            [(ngModel)]="editCategory.name"
+            required
+            class="form-control"
+            placeholder="Enter category name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="editCategoryDescription">Description *</label>
+          <textarea
+            id="editCategoryDescription"
+            name="editCategoryDescription"
+            [(ngModel)]="editCategory.description"
+            required
+            class="form-control"
+            rows="3"
+            placeholder="Enter category description"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editCategoryImage">Image URL</label>
+          <input
+            type="url"
+            id="editCategoryImage"
+            name="editCategoryImage"
+            [(ngModel)]="editCategory.urlImage"
+            class="form-control"
+            placeholder="https://example.com/image.jpg"
+          />
+          <small class="form-text"
+            >Optional: Add an image URL for the category</small
+          >
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closeEditModal()"
+          [disabled]="editingCategory"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="editingCategory || !editForm.form.valid"
+        >
+          @if (editingCategory) { Updating... } @else { Update Category }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal && categoryToDelete) {
+<div class="modal-overlay" (click)="closeDeleteModal()">
+  <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Confirm Delete</h2>
+      <button class="modal-close" (click)="closeDeleteModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      @if (deleteError) {
+      <div class="error-message">
+        {{ deleteError }}
+      </div>
+      }
+
+      <div class="delete-confirmation">
+        <div class="warning-icon">⚠️</div>
+        <h3>Are you sure you want to delete this category?</h3>
+        <div class="category-info">
+          <strong>{{ categoryToDelete.name }}</strong>
+          <p>{{ categoryToDelete.description }}</p>
+          <div class="category-stats">
+            <span class="product-count"
+              >Products: {{ categoryToDelete.productCount }}</span
+            >
+            @if (categoryToDelete.productCount === 0) {
+            <span class="safe-delete">✅ Safe to delete</span>
+            }
+          </div>
+        </div>
+        <p class="warning-text">
+          This action cannot be undone. The category will be permanently removed
+          from the system.
+        </p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="closeDeleteModal()"
+        [disabled]="deletingCategory"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        (click)="onConfirmDelete()"
+        [disabled]="deletingCategory"
+      >
+        @if (deletingCategory) { Deleting... } @else { Delete Category }
+      </button>
+    </div>
+  </div>
+</div>
+}
+<!-- View Products Modal -->
+@if (showProductsModal && selectedCategory) {
+<div class="modal-overlay" (click)="closeProductsModal()">
+  <div class="modal-content products-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Products in "{{ selectedCategory.name }}"</h2>
+      <button class="modal-close" (click)="closeProductsModal()">
+        &times;
+      </button>
+    </div>
+
+    <div class="modal-body">
+      @if (productsError) {
+      <div class="error-message">
+        {{ productsError }}
+      </div>
+      } @if (loadingProducts) {
+      <div class="loading-products">
+        <div class="loading-spinner"></div>
+        <p>Loading products...</p>
+      </div>
+      } @else if (categoryProducts.length > 0) {
+      <div class="products-list">
+        <div class="products-header">
+          <span class="products-count"
+            >{{ categoryProducts.length }} products found</span
+          >
+        </div>
+
+        <div class="products-table">
+          <div class="table-header">
+            <span>Image</span>
+            <span>Name</span>
+            <span>Price</span>
+            <span>Stock</span>
+          </div>
+
+          @for (product of categoryProducts; track product.id) {
+          <div class="table-row">
+            <div class="product-image">
+              @if (getProductImage(product)) {
+              <img
+                [src]="getProductImage(product)"
+                [alt]="product.name"
+                class="product-thumbnail"
+              />
+              } @else {
+              <div class="no-image-small">
+                <span>📦</span>
+              </div>
+              }
+            </div>
+
+            <div class="product-details">
+              <strong class="product-name">{{ product.name }}</strong>
+              <p class="product-description">{{ product.description }}</p>
+            </div>
+
+            <div class="product-price">
+              <span class="price">{{
+                product.price | currency : "EUR" : "symbol" : "1.2-2" : "es"
+              }}</span>
+            </div>
+
+            <div class="product-stock">
+              <span class="stock-count" [class.low-stock]="product.stock <= 5">
+                {{ product.stock }}
+              </span>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      } @else {
+      <div class="no-products">
+        <div class="no-products-icon">📦</div>
+        <h3>No products found</h3>
+        <p>This category doesn't have any products yet.</p>
+      </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="closeProductsModal()"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+}

@@ -1,0 +1,153 @@
+<div class="sales-reports-container">
+  @if (loading) {
+  <div class="loading-section">
+    <div class="loading-spinner"></div>
+    <p>Loading sales reports from API...</p>
+  </div>
+  } @else if (hasError) {
+  <div class="error-section">
+    <div class="error-card">
+      <h3>⚠️ Connection Error</h3>
+      <p>{{ errorMessage }}</p>
+      <p>
+        <strong>Expected endpoint:</strong> GET /api/Reports?type=SalesReport
+      </p>
+      <button class="btn btn-primary" (click)="retryLoad()">Reintentar</button>
+    </div>
+  </div>
+  } @else {
+  <div class="reports-header">
+    <h2>Sales Reports</h2>
+  </div>
+
+  <!-- Legacy API Response Info (hidden) -->
+  @if (false && apiResponse) {
+  <div class="api-info-section">
+    <div class="api-info-card">
+      <h4>📡 API Information</h4>
+      <div class="api-details">
+        <p><strong>Report ID:</strong> {{ apiResponse.id }}</p>
+        <p><strong>Type:</strong> {{ apiResponse.type }}</p>
+        <p>
+          <strong>Created:</strong>
+          {{ apiResponse.createdAt | date : "dd/MM/yyyy HH:mm:ss" }}
+        </p>
+        @if (apiResponse.fromDate && apiResponse.toDate) {
+        <p>
+          <strong>Period:</strong>
+          {{ apiResponse.fromDate | date : "dd/MM/yyyy" }} -
+          {{ apiResponse.toDate | date : "dd/MM/yyyy" }}
+        </p>
+        }
+        <p><strong>Summary:</strong> {{ apiResponse.summary }}</p>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- KPIs Section -->
+  <div class="kpi-grid">
+    <div class="kpi-card revenue">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-content">
+        <h3>Total Revenue</h3>
+        <p class="kpi-value">
+          {{ totalRevenue | currency : "EUR" : "symbol" : "1.0-0" }}
+        </p>
+        <span class="kpi-trend positive">+12.5%</span>
+      </div>
+    </div>
+
+    <div class="kpi-card orders">
+      <div class="kpi-icon">🛒</div>
+      <div class="kpi-content">
+        <h3>Total Orders</h3>
+        <p class="kpi-value">{{ totalOrders }}</p>
+        <span class="kpi-trend positive">+8.3%</span>
+      </div>
+    </div>
+
+    <div class="kpi-card average">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-content">
+        <h3>Average Value</h3>
+        <p class="kpi-value">
+          {{ averageOrderValue | currency : "EUR" : "symbol" : "1.0-0" }}
+        </p>
+        <span class="kpi-trend positive">+4.2%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sales Trend Section -->
+  <div class="report-section">
+    <h3>Sales Trend by Month</h3>
+    <div class="sales-chart">
+      <div class="chart-container">
+        @for (data of salesData; track data.period) {
+        <div class="chart-bar">
+          <div class="bar" [style.height.%]="(data.revenue / 75000) * 100">
+            <span class="bar-value">{{
+              data.revenue | currency : "EUR" : "symbol" : "1.0-0"
+            }}</span>
+          </div>
+          <span class="bar-label">{{ data.period.split(" ")[0] }}</span>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Products Section -->
+  <div class="report-section">
+    <h3>Best Selling Products</h3>
+    <div class="products-table">
+      <div class="table-header">
+        <span>Product</span>
+        <span>Amount</span>
+        <span>Income</span>
+        <span>Stake</span>
+      </div>
+      @for (product of topProducts; track product.name) {
+      <div class="table-row">
+        <span class="product-name">{{ product.name }}</span>
+        <span class="quantity">{{ product.quantity }} units</span>
+        <span class="revenue">{{
+          product.revenue | currency : "EUR" : "symbol" : "1.0-0"
+        }}</span>
+        <span class="percentage"
+          >{{
+            (product.revenue / totalRevenue) * 100 | number : "1.1-1"
+          }}%</span
+        >
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Sales Details Table -->
+  <div class="report-section">
+    <h3>Monthly Sales Details</h3>
+    <div class="sales-table">
+      <div class="table-header">
+        <span>Period</span>
+        <span>Sales</span>
+        <span>Income</span>
+        <span>Orders</span>
+        <span>Average per Order</span>
+      </div>
+      @for (data of salesData; track data.period) {
+      <div class="table-row">
+        <span>{{ data.period }}</span>
+        <span>{{ data.sales }}</span>
+        <span>{{ data.revenue | currency : "EUR" : "symbol" : "1.0-0" }}</span>
+        <span>{{ data.orders }}</span>
+        <span>{{
+          data.revenue / data.orders | currency : "EUR" : "symbol" : "1.0-0"
+        }}</span>
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>

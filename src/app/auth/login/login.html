@@ -1,0 +1,62 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>ERP System</h1>
+      <p>Login</p>
+    </div>
+
+    @if (successMessage) {
+    <div class="success-message">
+      {{ successMessage }}
+    </div>
+    }
+
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="login-form">
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          [(ngModel)]="credentials.email"
+          required
+          class="form-control"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          [(ngModel)]="credentials.password"
+          required
+          class="form-control"
+        />
+      </div>
+
+      @if (error) {
+      <div class="error-message">
+        {{ error }}
+      </div>
+      }
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-full"
+        [disabled]="loading || loginForm.invalid"
+      >
+        @if (loading) {
+        <span>Logging in...</span>
+        } @else {
+        <span>Login</span>
+        }
+      </button>
+
+      <div class="register-link">
+        Don't have an account? <a [routerLink]="['/register']" [queryParams]="{returnUrl: returnUrl}">Register here</a>
+      </div>
+    </form>
+  </div>
+</div>

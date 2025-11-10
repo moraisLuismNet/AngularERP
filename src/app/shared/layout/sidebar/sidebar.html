@@ -1,0 +1,46 @@
+<nav class="sidebar">
+  <div class="sidebar-content">
+    <ul class="menu-list">
+      @for (item of menuItems; track item.label) {
+      <li class="menu-item">
+        @if (item.children) {
+        <!-- Element with children (expandable) -->
+        <div class="menu-link has-children" (click)="toggleExpand(item)">
+          <span class="menu-icon">{{ item.icon }}</span>
+          <span class="menu-label">{{ item.label }}</span>
+          <span class="expand-icon" [class.expanded]="isExpanded(item)">
+            ▼
+          </span>
+        </div>
+
+        @if (isExpanded(item)) {
+        <ul class="submenu">
+          @for (child of item.children; track child.label) {
+          <li class="submenu-item">
+            <a
+              [routerLink]="child.route"
+              routerLinkActive="active"
+              class="submenu-link"
+            >
+              <span class="menu-icon">{{ child.icon }}</span>
+              <span class="menu-label">{{ child.label }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+        } } @else {
+        <!-- Element without children (direct link) -->
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          class="menu-link-direct"
+        >
+          <span class="menu-icon">{{ item.icon }}</span>
+          <span class="menu-label">{{ item.label }}</span>
+        </a>
+        }
+      </li>
+      }
+    </ul>
+  </div>
+</nav>

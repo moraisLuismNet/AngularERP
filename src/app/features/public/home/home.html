@@ -1,0 +1,203 @@
+<!-- Navbar public -->
+<nav class="public-navbar">
+  <div class="navbar-container">
+    <div class="navbar-brand">
+      <h2>🏪 AngularERP Store</h2>
+      <p class="navbar-tagline">Discover our products and categories</p>
+    </div>
+    <div class="navbar-actions">
+      @if (isAuthenticated) { @if (isAdmin) {
+      <span class="user-role admin">👑 Admin: {{ currentUser?.name }}</span>
+      <a routerLink="/dashboard" class="btn btn-secondary">Dashboard</a>
+      } @else if (isUser) {
+      <span class="user-role user">👤 {{ currentUser?.name }}</span>
+      <a routerLink="/shopping/cart" class="btn btn-cart">
+        🛒 Cart ({{ getCartItemCount() }})
+      </a>
+      }
+      <button class="btn btn-outline" (click)="logout()">Log out</button>
+      } @else {
+      <a
+        [routerLink]="['/login']"
+        [queryParams]="{ returnUrl: '/' }"
+        class="btn btn-primary"
+        >Login</a
+      >
+      }
+    </div>
+  </div>
+</nav>
+
+<!-- Main content -->
+<div class="home-container">
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      @if (isAdmin) {
+      <h1>Administration Panel - AngularERP</h1>
+      <p>Manage your store from the administrative dashboard</p>
+      <div class="admin-actions">
+        <a routerLink="/dashboard" class="btn btn-primary btn-large">
+          🏪 Go to Dashboard
+        </a>
+        <a routerLink="/inventory" class="btn btn-secondary btn-large">
+          📦 Manage Inventory
+        </a>
+        <a routerLink="/reports" class="btn btn-secondary btn-large">
+          📊 View Reports
+        </a>
+      </div>
+      }
+    </div>
+  </section>
+
+  <!-- Category filters -->
+  @if (!loading && !hasError && categories.length > 0) {
+  <section class="categories-filter">
+    <div class="container">
+      <h3>Filter by category:</h3>
+      <div class="category-buttons">
+        <button
+          class="category-btn"
+          [class.active]="selectedCategory === null"
+          (click)="filterByCategory(null)"
+        >
+          All
+        </button>
+        @for (category of categories; track category.id) {
+        <button
+          class="category-btn"
+          [class.active]="selectedCategory === category.id"
+          (click)="filterByCategory(category.id)"
+        >
+          {{ category.name }} ({{ category.productCount }})
+        </button>
+        }
+      </div>
+    </div>
+  </section>
+  }
+
+  <!-- Product list -->
+  <section class="products-section">
+    <div class="container">
+      @if (!loading && !hasError && filteredProducts.length > 0) {
+      <div class="products-grid">
+        @for (product of paginatedProducts; track product.id) {
+        <div class="product-card">
+          <div class="product-image">
+            @if (getProductImage(product) &&
+            isValidImageUrl(getProductImage(product))) {
+            <img
+              [src]="getImageUrl(getProductImage(product))"
+              [alt]="product.name"
+              (error)="onImageError($event)"
+            />
+            } @else {
+            <img
+              [src]="
+                getPlaceholderImage(product.name, getProductCategory(product))
+              "
+              [alt]="product.name"
+              class="placeholder-image"
+            />
+            }
+          </div>
+          <div class="product-info">
+            <h4>{{ product.name }}</h4>
+            <p class="product-description">{{ product.description }}</p>
+            <div class="product-details">
+              <span class="product-category">{{
+                getProductCategory(product)
+              }}</span>
+              <span class="product-price">{{
+                product.price | currency : "EUR" : "symbol" : "1.2-2" : "es"
+              }}</span>
+            </div>
+            <div class="product-stock">
+              <span [class.low-stock]="product.stock <= 5">
+                Stock: {{ product.stock }}
+              </span>
+            </div>
+
+            @if (isAuthenticated && isUser) {
+            <div class="product-actions">
+              @if (product.stock > 0) {
+              <button class="btn btn-add-to-cart" (click)="addToCart(product)">
+                @if (isProductInCart(product.id)) { 🛒 Add more ({{
+                  getProductQuantityInCart(product.id)
+                }}
+                in cart) } @else { 🛒 Add to cart }
+              </button>
+              } @else {
+              <button class="btn btn-disabled" disabled>Out of stock</button>
+              }
+            </div>
+            } @else if (isAuthenticated && isAdmin) {
+            <div class="admin-product-info">
+              <span class="admin-badge">👑 Administrator View</span>
+              <p class="admin-note">
+                Manage this product from the
+                <a routerLink="/inventory">inventory</a>
+              </p>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+      } @if (loading) {
+      <div class="loading">
+        <p>Loading products...</p>
+      </div>
+      } @if (hasError) {
+      <div class="error-section">
+        <div class="error-card">
+          <h3>⚠️ Connection Error</h3>
+          <p>{{ errorMessage }}</p>
+          <button class="btn btn-primary" (click)="retryLoad()">Retry</button>
+        </div>
+      </div>
+      } @if (!loading && !hasError && filteredProducts.length === 0 &&
+      selectedCategory) {
+      <div class="empty-state">
+        <p>There are no products in this category.</p>
+        <button class="btn btn-secondary" (click)="filterByCategory(null)">
+          View all products
+        </button>
+      </div>
+      } @if (!loading && !hasError && products.length === 0) {
+      <div class="empty-state">
+        <p>No products available</p>
+      </div>
+      }
+      
+      <!-- Pagination Controls -->
+      @if (!loading && !hasError && filteredProducts.length > itemsPerPage) {
+      <div class="pagination-controls">
+        <button 
+          class="pagination-btn" 
+          [disabled]="currentPage === 1" 
+          (click)="prevPage()"
+          title="Previous page"
+        >
+          &laquo; Previous
+        </button>
+        
+        <div class="page-info">
+          Page {{ currentPage }} of {{ totalPages }}
+        </div>
+        
+        <button 
+          class="pagination-btn" 
+          [disabled]="currentPage >= totalPages" 
+          (click)="nextPage()"
+          title="Next page"
+        >
+          Next &raquo;
+        </button>
+      </div>
+      }
+    </div>
+  </section>
+</div>

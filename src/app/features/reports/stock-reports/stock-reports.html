@@ -1,0 +1,181 @@
+<div class="stock-reports-container">
+  @if (loading) {
+  <div class="loading-section">
+    <div class="loading-spinner"></div>
+    <p>Loading stock reports from API...</p>
+  </div>
+  } @else if (hasError) {
+  <div class="error-section">
+    <div class="error-card">
+      <h3>⚠️ Connection Error</h3>
+      <p>{{ errorMessage }}</p>
+      <p>
+        <strong>Expected endpoint:</strong> GET /api/Reports?type=StockReport
+      </p>
+      <button class="btn btn-primary" (click)="retryLoad()">Retry</button>
+    </div>
+  </div>
+  } @else {
+  <div class="reports-header">
+    <h2>Stock Reports</h2>
+  </div>
+
+  <!-- Stock KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card total">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-content">
+        <h3>Total Products</h3>
+        <p class="kpi-value">{{ totalProducts }}</p>
+        <span class="kpi-label">units in stock</span>
+      </div>
+    </div>
+
+    <div class="kpi-card value">
+      <div class="kpi-icon">💎</div>
+      <div class="kpi-content">
+        <h3>Total Value</h3>
+        <p class="kpi-value">
+          {{ totalValue | currency : "EUR" : "symbol" : "1.0-0" }}
+        </p>
+        <span class="kpi-label">inventory value</span>
+      </div>
+    </div>
+
+    <div class="kpi-card warning">
+      <div class="kpi-icon">⚠️</div>
+      <div class="kpi-content">
+        <h3>Low Stock</h3>
+        <p class="kpi-value">{{ lowStockCount }}</p>
+        <span class="kpi-label">products with low stock</span>
+      </div>
+    </div>
+
+    <div class="kpi-card danger">
+      <div class="kpi-icon">🚫</div>
+      <div class="kpi-content">
+        <h3>Out of stock</h3>
+        <p class="kpi-value">{{ outOfStockCount }}</p>
+        <span class="kpi-label">out-of-stock products</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Status Overview -->
+  <div class="report-section">
+    <h3>Inventory Status</h3>
+    <div class="stock-table">
+      <div class="table-header">
+        <span>Product</span>
+        <span>Category</span>
+        <span>Current Stock</span>
+        <span>Min/Max Stock</span>
+        <span>Value</span>
+        <span>State</span>
+      </div>
+      @for (item of stockItems; track item.id) {
+      <div class="table-row">
+        <span class="product-name">{{ item.name }}</span>
+        <span class="category">{{ item.category }}</span>
+        <span class="current-stock">{{ item.currentStock }}</span>
+        <span class="min-max-stock"
+          >{{ item.minStock }} / {{ item.maxStock }}</span
+        >
+        <span class="value">{{
+          item.value | currency : "EUR" : "symbol" : "1.0-0"
+        }}</span>
+        <span class="status" [ngClass]="getStatusClass(item.status)">
+          {{ getStatusText(item.status) }}
+        </span>
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Stock Levels Chart -->
+  <div class="report-section">
+    <h3>Stock Levels by Product</h3>
+    <div class="stock-chart">
+      @for (item of stockItems; track item.id) {
+      <div class="stock-bar-container">
+        <div class="product-info">
+          <span class="product-name">{{ item.name }}</span>
+          <span class="stock-numbers"
+            >{{ item.currentStock }}/{{ item.maxStock }}</span
+          >
+        </div>
+        <div class="stock-bar">
+          <div
+            class="stock-progress"
+            [style.width.%]="(item.currentStock / item.maxStock) * 100"
+            [ngClass]="getStatusClass(item.status)"
+          ></div>
+          <div
+            class="min-stock-indicator"
+            [style.left.%]="(item.minStock / item.maxStock) * 100"
+          ></div>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Recent Movements -->
+  <div class="report-section">
+    <h3>Recent Stock Movements</h3>
+    <div class="movements-table">
+      <div class="table-header">
+        <span>Date</span>
+        <span>Product</span>
+        <span>Type</span>
+        <span>Amount</span>
+        <span>Reason</span>
+      </div>
+      @for (movement of recentMovements; track $index) {
+      <div class="table-row">
+        <span class="date">{{ movement.date | date : "dd/MM/yyyy" }}</span>
+        <span class="product">{{ movement.product }}</span>
+        <span
+          class="movement-type"
+          [ngClass]="movement.type === 'in' ? 'type-in' : 'type-out'"
+        >
+          {{ movement.type === "in" ? "Entrance" : "Exit" }}
+        </span>
+        <span
+          class="quantity"
+          [ngClass]="movement.type === 'in' ? 'quantity-in' : 'quantity-out'"
+        >
+          {{ movement.type === "in" ? "+" : "-" }}{{ movement.quantity }}
+        </span>
+        <span class="reason">{{ movement.reason }}</span>
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Stock Alerts -->
+  @if (lowStockCount > 0 || outOfStockCount > 0) {
+  <div class="report-section alerts-section">
+    <h3>Stock Alerts</h3>
+    <div class="alerts-grid">
+      @for (item of stockItems; track item.id) { @if (item.status === 'low' ||
+      item.status === 'out') {
+      <div class="alert-card" [ngClass]="getStatusClass(item.status)">
+        <div class="alert-icon">
+          {{ item.status === "out" ? "🚫" : "⚠️" }}
+        </div>
+        <div class="alert-content">
+          <h4>{{ item.name }}</h4>
+          <p>
+            {{ item.status === "out" ? "Out of stock" : "Stock below minimum" }}
+          </p>
+          <span class="alert-stock"
+            >Current stock: {{ item.currentStock }}</span
+          >
+        </div>
+      </div>
+      } }
+    </div>
+  </div>
+  } }
+</div>

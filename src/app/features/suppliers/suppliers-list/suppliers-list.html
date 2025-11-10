@@ -1,0 +1,651 @@
+<div class="suppliers-container">
+  <div class="header">
+    <h1>Suppliers Management</h1>
+    <button class="btn btn-primary" (click)="createNewSupplier()">
+      New Supplier
+    </button>
+  </div>
+
+  @if (!loading && !hasError && suppliers.length > 0) {
+  <div class="suppliers-table">
+    <!-- Desktop Table View -->
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Contact</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Product</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (supplier of suppliers; track supplier.id) {
+        <tr>
+          <td class="name-cell">
+            <strong>{{ supplier.name }}</strong>
+            <div class="supplier-location">
+              {{ supplier.city }}, {{ supplier.country }}
+            </div>
+          </td>
+          <td class="contact-cell">
+            {{ supplier.contactPerson || "-" }}
+          </td>
+          <td class="email-cell">
+            @if (supplier.email) {
+            <a [href]="'mailto:' + supplier.email">{{ supplier.email }}</a>
+            } @else {
+            <span class="no-data">-</span>
+            }
+          </td>
+          <td class="phone-cell">
+            @if (supplier.phone) {
+            <a [href]="'tel:' + supplier.phone">{{ supplier.phone }}</a>
+            } @else {
+            <span class="no-data">-</span>
+            }
+          </td>
+          <td class="product-name-cell">
+            <span class="product-name">{{
+              getProductName(supplier.idProduct)
+            }}</span>
+          </td>
+          <td class="actions-cell">
+            <button
+              class="btn btn-sm btn-secondary"
+              (click)="editSupplierModal(supplier)"
+            >
+              Edit
+            </button>
+            <button
+              class="btn btn-sm btn-info"
+              (click)="viewSupplierDetail(supplier)"
+            >
+              View Details
+            </button>
+            <button
+              class="btn btn-sm btn-danger"
+              (click)="confirmDeleteSupplier(supplier)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Mobile Card View -->
+    @for (supplier of suppliers; track supplier.id) {
+    <div class="supplier-card">
+      <div class="supplier-header">
+        <div class="supplier-avatar">
+          {{ supplier.name.charAt(0).toUpperCase() }}
+        </div>
+        <div class="supplier-title">
+          <strong>{{ supplier.name }}</strong>
+          <div class="supplier-location-mobile">
+            {{ supplier.city }}, {{ supplier.country }}
+          </div>
+        </div>
+      </div>
+
+      <div class="supplier-meta">
+        <span class="supplier-product-badge">{{
+          getProductName(supplier.idProduct)
+        }}</span>
+      </div>
+
+      <div class="supplier-info-mobile">
+        <div class="supplier-info-row">
+          <span class="icon">👤</span>
+          <span>{{ supplier.contactPerson || "No contact person" }}</span>
+        </div>
+        <div class="supplier-info-row">
+          <span class="icon">📧</span>
+          @if (supplier.email) {
+          <a [href]="'mailto:' + supplier.email">{{ supplier.email }}</a>
+          } @else {
+          <span class="no-data">No email</span>
+          }
+        </div>
+        <div class="supplier-info-row">
+          <span class="icon">📞</span>
+          @if (supplier.phone) {
+          <a [href]="'tel:' + supplier.phone">{{ supplier.phone }}</a>
+          } @else {
+          <span class="no-data">No phone</span>
+          }
+        </div>
+      </div>
+
+      <div class="supplier-actions">
+        <button class="btn btn-secondary" (click)="editSupplierModal(supplier)">
+          Edit
+        </button>
+        <button class="btn btn-info" (click)="viewSupplierDetail(supplier)">
+          View Details
+        </button>
+        <button
+          class="btn btn-danger"
+          (click)="confirmDeleteSupplier(supplier)"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+    }
+  </div>
+  } @if (loading) {
+  <div class="loading">
+    <p>Loading suppliers...</p>
+  </div>
+  } @if (hasError) {
+  <div class="error-section">
+    <div class="error-card">
+      <h3>⚠️ Connection Error</h3>
+      <p>{{ errorMessage }}</p>
+      <button class="btn btn-primary" (click)="retryLoad()">Retry</button>
+    </div>
+  </div>
+  } @if (!loading && !hasError && suppliers.length === 0) {
+  <div class="empty-state">
+    <p>No suppliers registered</p>
+    <button class="btn btn-primary" (click)="createNewSupplier()">
+      Add First Supplier
+    </button>
+  </div>
+  }
+</div>
+<!-- Create Supplier Modal -->
+@if (showCreateModal) {
+<div class="modal-overlay" (click)="closeCreateModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Create New Supplier</h2>
+      <button class="modal-close" (click)="closeCreateModal()">&times;</button>
+    </div>
+
+    <form (ngSubmit)="onSubmitCreate()" #createForm="ngForm">
+      <div class="modal-body">
+        @if (createError) {
+        <div class="error-message">
+          {{ createError }}
+        </div>
+        }
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="supplierName">Supplier Name *</label>
+            <input
+              type="text"
+              id="supplierName"
+              name="supplierName"
+              [(ngModel)]="newSupplier.name"
+              required
+              class="form-control"
+              placeholder="Enter supplier name"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="contactPerson">Contact Person *</label>
+            <input
+              type="text"
+              id="contactPerson"
+              name="contactPerson"
+              [(ngModel)]="newSupplier.contactPerson"
+              required
+              class="form-control"
+              placeholder="Enter contact person name"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="newSupplier.email"
+            required
+            class="form-control"
+            placeholder="supplier@example.com"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="phone">Phone</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              [(ngModel)]="newSupplier.phone"
+              class="form-control"
+              placeholder="+1234567890"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="idProduct">Product ID *</label>
+            <input
+              type="number"
+              id="idProduct"
+              name="idProduct"
+              [(ngModel)]="newSupplier.idProduct"
+              required
+              min="1"
+              class="form-control"
+              placeholder="Enter product ID"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="address">Address</label>
+          <input
+            type="text"
+            id="address"
+            name="address"
+            [(ngModel)]="newSupplier.address"
+            class="form-control"
+            placeholder="Enter street address"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city">City</label>
+            <input
+              type="text"
+              id="city"
+              name="city"
+              [(ngModel)]="newSupplier.city"
+              class="form-control"
+              placeholder="Enter city"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="country">Country</label>
+            <input
+              type="text"
+              id="country"
+              name="country"
+              [(ngModel)]="newSupplier.country"
+              class="form-control"
+              placeholder="Enter country"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closeCreateModal()"
+          [disabled]="creatingSupplier"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="creatingSupplier || !createForm.form.valid"
+        >
+          @if (creatingSupplier) { Creating... } @else { Create Supplier }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+<!-- Edit Supplier Modal -->
+@if (showEditModal) {
+<div class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Supplier</h2>
+      <button class="modal-close" (click)="closeEditModal()">&times;</button>
+    </div>
+
+    <form (ngSubmit)="onSubmitEdit()" #editForm="ngForm">
+      <div class="modal-body">
+        @if (editError) {
+        <div class="error-message">
+          {{ editError }}
+        </div>
+        }
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editSupplierName">Supplier Name *</label>
+            <input
+              type="text"
+              id="editSupplierName"
+              name="editSupplierName"
+              [(ngModel)]="editSupplier.name"
+              required
+              class="form-control"
+              placeholder="Enter supplier name"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editContactPerson">Contact Person *</label>
+            <input
+              type="text"
+              id="editContactPerson"
+              name="editContactPerson"
+              [(ngModel)]="editSupplier.contactPerson"
+              required
+              class="form-control"
+              placeholder="Enter contact person name"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editEmail">Email *</label>
+          <input
+            type="email"
+            id="editEmail"
+            name="editEmail"
+            [(ngModel)]="editSupplier.email"
+            required
+            class="form-control"
+            placeholder="supplier@example.com"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPhone">Phone</label>
+            <input
+              type="tel"
+              id="editPhone"
+              name="editPhone"
+              [(ngModel)]="editSupplier.phone"
+              class="form-control"
+              placeholder="+1234567890"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editIdProduct">Product ID *</label>
+            <input
+              type="number"
+              id="editIdProduct"
+              name="editIdProduct"
+              [(ngModel)]="editSupplier.idProduct"
+              required
+              min="1"
+              class="form-control"
+              placeholder="Enter product ID"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editAddress">Address</label>
+          <input
+            type="text"
+            id="editAddress"
+            name="editAddress"
+            [(ngModel)]="editSupplier.address"
+            class="form-control"
+            placeholder="Enter street address"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editCity">City</label>
+            <input
+              type="text"
+              id="editCity"
+              name="editCity"
+              [(ngModel)]="editSupplier.city"
+              class="form-control"
+              placeholder="Enter city"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editCountry">Country</label>
+            <input
+              type="text"
+              id="editCountry"
+              name="editCountry"
+              [(ngModel)]="editSupplier.country"
+              class="form-control"
+              placeholder="Enter country"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closeEditModal()"
+          [disabled]="editingSupplier"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="editingSupplier || !editForm.form.valid"
+        >
+          @if (editingSupplier) { Updating... } @else { Update Supplier }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+<!-- View Supplier Detail Modal -->
+@if (showDetailModal) {
+<div class="modal-overlay" (click)="closeDetailModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Supplier Details</h2>
+      <button class="modal-close" (click)="closeDetailModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      @if (loadingDetail) {
+      <div class="loading-detail">
+        <p>Loading supplier details...</p>
+      </div>
+      } @else if (detailError) {
+      <div class="error-message">
+        {{ detailError }}
+      </div>
+      } @else if (supplierDetail) {
+      <div class="supplier-detail-content">
+        <!-- Company Information -->
+        <div class="detail-section">
+          <h3>Company Information</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Company Name:</label>
+              <span>{{ supplierDetail.name }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Contact Person:</label>
+              <span>{{ supplierDetail.contactPerson || "Not provided" }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Email:</label>
+              <span>
+                @if (supplierDetail.email) {
+                <a href="mailto:{{ supplierDetail.email }}" class="email-link">
+                  {{ supplierDetail.email }}
+                </a>
+                } @else {
+                <span class="no-data">Not provided</span>
+                }
+              </span>
+            </div>
+            <div class="detail-item">
+              <label>Phone:</label>
+              <span>
+                @if (supplierDetail.phone) {
+                <a href="tel:{{ supplierDetail.phone }}" class="phone-link">
+                  {{ supplierDetail.phone }}
+                </a>
+                } @else {
+                <span class="no-data">Not provided</span>
+                }
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="detail-section">
+          <h3>Address Information</h3>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <label>Street Address:</label>
+              <span>{{ supplierDetail.address || "Not provided" }}</span>
+            </div>
+            <div class="detail-item">
+              <label>City:</label>
+              <span>{{ supplierDetail.city || "Not provided" }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Country:</label>
+              <span>{{ supplierDetail.country || "Not provided" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Business Information -->
+        <div class="detail-section">
+          <h3>Business Information</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Supplier ID:</label>
+              <span class="supplier-id">#{{ supplierDetail.id }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Product:</label>
+              <span class="product-name-badge">{{
+                getProductName(supplierDetail.idProduct)
+              }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Account Status:</label>
+              <span
+                class="status-badge"
+                [class.active]="supplierDetail.isActive"
+                [class.inactive]="!supplierDetail.isActive"
+              >
+                {{ supplierDetail.isActive ? "Active" : "Inactive" }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="closeDetailModal()"
+      >
+        Close
+      </button>
+      @if (supplierDetail) {
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="editSupplierModal(supplierDetail); closeDetailModal()"
+      >
+        Edit Supplier
+      </button>
+      }
+    </div>
+  </div>
+</div>
+}
+<!-- Delete Supplier Confirmation Modal -->
+@if (showDeleteModal) {
+<div class="modal-overlay" (click)="closeDeleteModal()">
+  <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Delete Supplier</h2>
+      <button class="modal-close" (click)="closeDeleteModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      @if (deleteError) {
+      <div class="error-message">
+        {{ deleteError }}
+      </div>
+      }
+
+      <div class="delete-confirmation">
+        <div class="warning-icon">⚠️</div>
+        <h3>Are you sure you want to delete this supplier?</h3>
+
+        @if (supplierToDelete) {
+        <div class="supplier-info">
+          <strong>{{ supplierToDelete.name }}</strong>
+          <p>
+            <strong>Contact Person:</strong>
+            {{ supplierToDelete.contactPerson || "Not provided" }}
+          </p>
+          <p>
+            <strong>Email:</strong>
+            {{ supplierToDelete.email || "Not provided" }}
+          </p>
+          <p>
+            <strong>Phone:</strong>
+            {{ supplierToDelete.phone || "Not provided" }}
+          </p>
+          <p>
+            <strong>City:</strong> {{ supplierToDelete.city || "Not provided" }}
+          </p>
+          <p><strong>Product ID:</strong> {{ supplierToDelete.idProduct }}</p>
+        </div>
+        }
+
+        <p class="warning-text">
+          This action cannot be undone. The supplier and all associated data
+          will be permanently removed from the system.
+        </p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="closeDeleteModal()"
+        [disabled]="deletingSupplier"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        (click)="deleteSupplier()"
+        [disabled]="deletingSupplier"
+      >
+        @if (deletingSupplier) { Deleting... } @else { Delete Supplier }
+      </button>
+    </div>
+  </div>
+</div>
+}
